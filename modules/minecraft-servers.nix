@@ -5,22 +5,26 @@
   pkgs,
   ...
 }:
-with lib; let
+with lib;
+let
   cfg = config.services.minecraft-servers;
 
-  mkOpt = type: default: mkOption {inherit type default;};
+  mkOpt = type: default: mkOption { inherit type default; };
 
-  mkOpt' = type: default: description:
-    mkOption {inherit type default description;};
+  mkOpt' =
+    type: default: description:
+    mkOption { inherit type default description; };
 
-  mkBoolOpt = default:
+  mkBoolOpt =
+    default:
     mkOption {
       inherit default;
       type = types.bool;
       example = true;
     };
 
-  mkBoolOpt' = default: description:
+  mkBoolOpt' =
+    default: description:
     mkOption {
       inherit default description;
       type = types.bool;
@@ -35,38 +39,43 @@ with lib; let
 
   normalizeFiles = files: mapAttrs configToPath (filterAttrs (_: nonEmptyValue) files);
   nonEmptyValue = x: nonEmpty x && (x ? value -> nonEmpty x.value);
-  nonEmpty = x: x != {} && x != [];
+  nonEmpty = x: x != { } && x != [ ];
 
-  configToPath = name: config:
-    if isStringLike config # Includes paths and packages
-    then config
-    else (getFormat name config).generate name config.value;
-  getFormat = name: config:
-    if config ? format && config.format != null
-    then config.format
-    else inferFormat name;
-  inferFormat = name: let
-    error = throw "nix-minecraft: Could not infer format from file '${name}'. Specify one using 'format'.";
-    extension = builtins.match "[^.]*\\.(.+)" name;
-  in
-    if extension != null && extension != []
-    then formatExtensions.${head extension} or error
-    else error;
+  configToPath =
+    name: config:
+    if
+      isStringLike config # Includes paths and packages
+    then
+      config
+    else
+      (getFormat name config).generate name config.value;
+  getFormat =
+    name: config: if config ? format && config.format != null then config.format else inferFormat name;
+  inferFormat =
+    name:
+    let
+      error = throw "nix-minecraft: Could not infer format from file '${name}'. Specify one using 'format'.";
+      extension = builtins.match "[^.]*\\.(.+)" name;
+    in
+    if extension != null && extension != [ ] then
+      formatExtensions.${head extension} or error
+    else
+      error;
 
-  txtList = {}: {
+  txtList = { }: {
     type = with lib.types; listOf str;
     generate = name: value: pkgs.writeText name (lib.concatStringsSep "\n" value);
   };
 
   formatExtensions = with pkgs.formats; {
-    "yml" = yaml {};
-    "yaml" = yaml {};
-    "json" = json {};
-    "props" = keyValue {};
-    "properties" = keyValue {};
-    "toml" = toml {};
-    "ini" = ini {};
-    "txt" = txtList {};
+    "yml" = yaml { };
+    "yaml" = yaml { };
+    "json" = json { };
+    "props" = keyValue { };
+    "properties" = keyValue { };
+    "toml" = toml { };
+    "ini" = ini { };
+    "txt" = txtList { };
   };
 
   configType = types.submodule {
@@ -135,15 +144,20 @@ with lib; let
     };
   };
 
-  managementSystemConfig = name: server: let
-    ms = server.managementSystem;
-    tmux = "${getBin pkgs.tmux}/bin/tmux";
-  in
-    assert assertMsg (!(ms.tmux.enable && ms.systemd-socket.enable)) "Only one server management system can be enabled at a time.";
-      if ms.tmux.enable
-      then let
+  managementSystemConfig =
+    name: server:
+    let
+      ms = server.managementSystem;
+      tmux = "${getBin pkgs.tmux}/bin/tmux";
+    in
+    assert assertMsg (
+      !(ms.tmux.enable && ms.systemd-socket.enable)
+    ) "Only one server management system can be enabled at a time.";
+    if ms.tmux.enable then
+      let
         sock = ms.tmux.socketPath name;
-      in {
+      in
+      {
         serviceConfig = {
           Type = "forking";
           GuessMainPID = true;
@@ -174,8 +188,8 @@ with lib; let
           '';
         };
       }
-      else if ms.systemd-socket.enable
-      then {
+    else if ms.systemd-socket.enable then
+      {
         serviceConfig = {
           Type = "simple";
           StandardInput = "socket";
@@ -196,10 +210,12 @@ with lib; let
           '';
         };
       }
-      else builtins.throw "At least one server management system must be enabled.";
+    else
+      builtins.throw "At least one server management system must be enabled.";
 
   mkEnableOpt = description: mkBoolOpt' false description;
-in {
+in
+{
   options.services.minecraft-servers = {
     enable = mkEnableOpt ''
       If enabled, the servers in <option>services.minecraft-servers.servers</option>
@@ -287,7 +303,7 @@ in {
     };
 
     servers = mkOption {
-      default = {};
+      default = { };
       description = ''
         Servers to create and manage using this module.
         Each server can be stopped with <literal>systemctl stop minecraft-server-servername</literal>.
@@ -298,7 +314,7 @@ in {
       '';
       type = types.attrsOf (
         types.submodule (
-          {name, ...}: {
+          { name, ... }: {
             options = {
               enable = mkEnableOpt ''
                 Whether to enable this server.
@@ -399,7 +415,7 @@ in {
 
               whitelist = mkOption {
                 type = types.attrsOf minecraftUUID;
-                default = {};
+                default = { };
                 description = ''
                   Whitelisted players, only has an effect when
                   enabled via <option>services.minecraft-servers.<name>.serverProperties</option>
@@ -418,7 +434,7 @@ in {
 
               operators = mkOption {
                 type = types.attrsOf (
-                  types.coercedTo minecraftUUID (v: {uuid = v;}) (
+                  types.coercedTo minecraftUUID (v: { uuid = v; }) (
                     types.submodule {
                       options = {
                         uuid = mkOption {
@@ -440,7 +456,7 @@ in {
                     }
                   )
                 );
-                default = {};
+                default = { };
                 description = ''
                   Server operators. See <link xlink:href="https://minecraft.wiki/w/Ops.json_format"/>.
 
@@ -461,7 +477,7 @@ in {
 
               bannedPlayers = mkOption {
                 type = types.attrsOf (
-                  types.coercedTo minecraftUUID (v: {uuid = v;}) (
+                  types.coercedTo minecraftUUID (v: { uuid = v; }) (
                     types.submodule {
                       options = {
                         uuid = mkOption {
@@ -497,7 +513,7 @@ in {
                     }
                   )
                 );
-                default = {};
+                default = { };
                 description = ''
                   Banned players. See <link xlink:href="https://docs.papermc.io/paper/reference/vanilla-data-files/"/>.
 
@@ -519,13 +535,14 @@ in {
               };
 
               serverProperties = mkOption {
-                type = with types;
+                type =
+                  with types;
                   attrsOf (oneOf [
                     bool
                     int
                     str
                   ]);
-                default = {};
+                default = { };
                 example = literalExpression ''
                   {
                     server-port = 43000;
@@ -549,7 +566,7 @@ in {
               };
 
               allowedSymlinks = mkOption {
-                default = [];
+                default = [ ];
                 type = with types; listOf str;
                 example = literalExpression ''
                   [
@@ -579,35 +596,39 @@ in {
                 with types; coercedTo (listOf str) (lib.concatStringsSep " ") (separatedString " ")
               ) "-Xmx2G -Xms1G" "JVM options for this server.";
 
-              path = with types;
-                mkOpt' (listOf (either path str)) [] ''
+              path =
+                with types;
+                mkOpt' (listOf (either path str)) [ ] ''
                   Packages added to the Minecraft server's <literal>PATH</literal> environment variable.
                   Works as <option>systemd.services.<name>.path</option>.
                 '';
 
-              environment = with types;
+              environment =
+                with types;
                 mkOpt'
-                (attrsOf (
-                  nullOr (oneOf [
-                    str
-                    path
-                    package
-                  ])
-                ))
-                {}
-                ''
-                  Environment variables added to the Minecraft server's processes.
-                  Works as <option>systemd.services.<name>.environment</option>.
-                '';
+                  (attrsOf (
+                    nullOr (oneOf [
+                      str
+                      path
+                      package
+                    ])
+                  ))
+                  { }
+                  ''
+                    Environment variables added to the Minecraft server's processes.
+                    Works as <option>systemd.services.<name>.environment</option>.
+                  '';
 
-              symlinks = with types;
-                mkOpt' (attrsOf (either path configType)) {} ''
+              symlinks =
+                with types;
+                mkOpt' (attrsOf (either path configType)) { } ''
                   Things to symlink into this server's data directory, in the form of
                   a nix package/derivation. Can be used to declaratively manage
                   arbitrary files in the server's data directory.
                 '';
-              files = with types;
-                mkOpt' (attrsOf (either path configType)) {} ''
+              files =
+                with types;
+                mkOpt' (attrsOf (either path configType)) { } ''
                   Things to copy into this server's data directory. Similar to symlinks,
                   but these are actual, writable, files. Useful for configuration files
                   that don't behave well when read-only. Directories are copied recursively and
@@ -623,19 +644,19 @@ in {
                 type = types.submodule (
                   managementSystem.getSubModules
                   ++ [
-                    {config = mkDefault cfg.managementSystem;}
+                    { config = mkDefault cfg.managementSystem; }
                   ]
                 );
                 description = ''
                   Configuration for the system used to manage this server. Overrides the global configuration on an option-by-option basis.
                 '';
-                default = {};
+                default = { };
                 example = options.services.minecraft-servers.managementSystem.example;
               };
             };
 
             config = {
-              allowedSymlinks = ["/nix/store"];
+              allowedSymlinks = [ "/nix/store" ];
             };
           }
         )
@@ -646,7 +667,8 @@ in {
   config = mkIf cfg.enable (
     let
       servers = filterAttrs (_: cfg: cfg.enable) cfg.servers;
-    in {
+    in
+    {
       # users = {
       #   users.minecraft = mkIf (cfg.user == "minecraft") {
       #     description = "Minecraft server service user";
@@ -659,24 +681,27 @@ in {
       #   groups.minecraft = mkIf (cfg.group == "minecraft") {};
       # };
 
-      users.users = mapAttrs' (_: conf:
-        nameValuePair conf.user (lib.mkDefault {
-          description = "Minecraft server service user";
-          home = cfg.dataDir;
-          createHome = true;
-          homeMode = "770";
-          isSystemUser = true;
-          group = conf.group;
-        }))
-      servers;
-
-      users.groups =
-        mapAttrs' (
-          _: conf:
-            nameValuePair (conf.group) (lib.mkDefault {
-              })
+      users.users = mapAttrs' (
+        _: conf:
+        nameValuePair conf.user (
+          lib.mkDefault {
+            description = "Minecraft server service user";
+            home = cfg.dataDir;
+            createHome = true;
+            homeMode = "770";
+            isSystemUser = true;
+            group = conf.group;
+          }
         )
-        servers;
+      ) servers;
+
+      users.groups = mapAttrs' (
+        _: conf:
+        nameValuePair (conf.group) (
+          lib.mkDefault {
+          }
+        )
+      ) servers;
 
       assertions = [
         {
@@ -694,13 +719,14 @@ in {
             + " Set one to use a different data directory.";
         }
         {
-          assertion = let
-            serverPorts = mapAttrsToList (name: conf: conf.serverProperties.server-port or 25565) (
-              filterAttrs (_: cfg: cfg.openFirewall) servers
-            );
+          assertion =
+            let
+              serverPorts = mapAttrsToList (name: conf: conf.serverProperties.server-port or 25565) (
+                filterAttrs (_: cfg: cfg.openFirewall) servers
+              );
 
-            counts = map (port: count (x: x == port) serverPorts) (unique serverPorts);
-          in
+              counts = map (port: count (x: x == port) serverPorts) (unique serverPorts);
+            in
             lib.all (x: x == 1) counts;
           message = "Multiple servers are set to use the same port. Change one to use a different port.";
         }
@@ -715,25 +741,27 @@ in {
         See the changelog file for more information.
       '';
 
-      networking.firewall = let
-        toOpen = filterAttrs (_: cfg: cfg.openFirewall) servers;
-        # Minecraft and RCON
-        getTCPPorts = n: c:
-          [c.serverProperties.server-port or 25565]
-          ++ (optional (c.serverProperties.enable-rcon or false) (c.serverProperties."rcon.port" or 25575));
-        # Query
-        getUDPPorts = n: c:
-          optional (c.serverProperties.enable-query or false) (c.serverProperties."query.port" or 25565);
-      in {
-        allowedUDPPorts = flatten (mapAttrsToList getUDPPorts toOpen);
-        allowedTCPPorts = flatten (mapAttrsToList getTCPPorts toOpen);
-      };
+      networking.firewall =
+        let
+          toOpen = filterAttrs (_: cfg: cfg.openFirewall) servers;
+          # Minecraft and RCON
+          getTCPPorts =
+            n: c:
+            [ c.serverProperties.server-port or 25565 ]
+            ++ (optional (c.serverProperties.enable-rcon or false) (c.serverProperties."rcon.port" or 25575));
+          # Query
+          getUDPPorts =
+            n: c:
+            optional (c.serverProperties.enable-query or false) (c.serverProperties."query.port" or 25565);
+        in
+        {
+          allowedUDPPorts = flatten (mapAttrsToList getUDPPorts toOpen);
+          allowedTCPPorts = flatten (mapAttrsToList getTCPPorts toOpen);
+        };
 
-      systemd.tmpfiles.rules =
-        mapAttrsToList (
-          name: conf: "d '${cfg.dataDir}/${name}' 0770 ${conf.user} ${conf.group} - -"
-        )
-        servers;
+      systemd.tmpfiles.rules = mapAttrsToList (
+        name: conf: "d '${cfg.dataDir}/${name}' 0770 ${conf.user} ${conf.group} - -"
+      ) servers;
 
       systemd.sockets = pipe servers [
         (filterAttrs (name: server: server.managementSystem.systemd-socket.enable))
@@ -741,90 +769,87 @@ in {
           name: server: {
             name = "minecraft-server-${name}";
             value = {
-              requires = ["minecraft-server-${name}.service"];
-              partOf = ["minecraft-server-${name}.service"];
-              socketConfig = let
-                socketConf = server.managementSystem.systemd-socket.stdinSocket;
-              in {
-                ListenFIFO = socketConf.path name;
-                SocketMode = socketConf.mode;
-                SocketUser = server.user;
-                SocketGroup = server.group;
-                RemoveOnStop = true;
-                FlushPending = true;
-              };
+              requires = [ "minecraft-server-${name}.service" ];
+              partOf = [ "minecraft-server-${name}.service" ];
+              socketConfig =
+                let
+                  socketConf = server.managementSystem.systemd-socket.stdinSocket;
+                in
+                {
+                  ListenFIFO = socketConf.path name;
+                  SocketMode = socketConf.mode;
+                  SocketUser = server.user;
+                  SocketGroup = server.group;
+                  RemoveOnStop = true;
+                  FlushPending = true;
+                };
             };
           }
         ))
       ];
 
-      systemd.services =
-        mapAttrs' (
-          name: conf: let
-            symlinks = normalizeFiles (
-              {
-                "eula.txt".value = {
-                  eula = true;
-                };
-                "eula.txt".format = pkgs.formats.keyValue {};
-              }
-              // conf.symlinks
-            );
-            files = normalizeFiles (
-              {
-                "whitelist.json".value =
-                  mapAttrsToList (n: v: {
-                    name = n;
-                    uuid = v;
-                  })
-                  conf.whitelist;
-                "ops.json".value =
-                  mapAttrsToList (n: v: {
-                    name = n;
-                    uuid = v.uuid;
-                    level = v.level;
-                    bypassesPlayerLimit = v.bypassesPlayerLimit;
-                  })
-                  conf.operators;
-                "banned-players.json".value =
-                  mapAttrsToList (
-                    n: v:
-                      {
-                        name = n;
-                        uuid = v.uuid;
-                      }
-                      // lib.optionalAttrs (v.created != null) {
-                        created = v.created;
-                      }
-                      // lib.optionalAttrs (v.source != null) {
-                        source = v.source;
-                      }
-                      // lib.optionalAttrs (v.expires != null) {
-                        expires = v.expires;
-                      }
-                      // lib.optionalAttrs (v.reason != null) {
-                        reason = v.reason;
-                      }
-                  )
-                  conf.bannedPlayers;
-                "server.properties".value = conf.serverProperties;
-                "allowed_symlinks.txt".value = conf.allowedSymlinks;
-              }
-              // conf.files
-            );
+      systemd.services = mapAttrs' (
+        name: conf:
+        let
+          symlinks = normalizeFiles (
+            {
+              "eula.txt".value = {
+                eula = true;
+              };
+              "eula.txt".format = pkgs.formats.keyValue { };
+            }
+            // conf.symlinks
+          );
+          files = normalizeFiles (
+            {
+              "whitelist.json".value = mapAttrsToList (n: v: {
+                name = n;
+                uuid = v;
+              }) conf.whitelist;
+              "ops.json".value = mapAttrsToList (n: v: {
+                name = n;
+                uuid = v.uuid;
+                level = v.level;
+                bypassesPlayerLimit = v.bypassesPlayerLimit;
+              }) conf.operators;
+              "banned-players.json".value = mapAttrsToList (
+                n: v:
+                {
+                  name = n;
+                  uuid = v.uuid;
+                }
+                // lib.optionalAttrs (v.created != null) {
+                  created = v.created;
+                }
+                // lib.optionalAttrs (v.source != null) {
+                  source = v.source;
+                }
+                // lib.optionalAttrs (v.expires != null) {
+                  expires = v.expires;
+                }
+                // lib.optionalAttrs (v.reason != null) {
+                  reason = v.reason;
+                }
+              ) conf.bannedPlayers;
+              "server.properties".value = conf.serverProperties;
+              "allowed_symlinks.txt".value = conf.allowedSymlinks;
+            }
+            // conf.files
+          );
 
-            msConfig = managementSystemConfig name conf;
+          msConfig = managementSystemConfig name conf;
 
-            markManaged = file: "echo ${file} >> .nix-minecraft-managed";
-            cleanAllManaged = ''
-              if [ -e .nix-minecraft-managed ]; then
-                readarray -t to_delete < .nix-minecraft-managed
-                rm -rf "''${to_delete[@]}"
-                rm .nix-minecraft-managed
-              fi
-            '';
+          markManaged = file: "echo ${file} >> .nix-minecraft-managed";
+          cleanAllManaged = ''
+            if [ -e .nix-minecraft-managed ]; then
+              readarray -t to_delete < .nix-minecraft-managed
+              rm -rf "''${to_delete[@]}"
+              rm .nix-minecraft-managed
+            fi
+          '';
 
-            ExecStartPre = let
+          ExecStartPre =
+            let
               backup = file: ''
                 if [[ -e ${file} ]]; then
                   echo ${file} "already exists, moving"
@@ -833,10 +858,12 @@ in {
               '';
               mkSymlinks = concatStringsSep "\n" (
                 mapAttrsToList (
-                  n_: v_: let
+                  n_: v_:
+                  let
                     n = escapeShellArg n_;
                     v = escapeShellArg v_;
-                  in ''
+                  in
+                  ''
                     ${backup n}
                     mkdir -p "$(dirname ${n})"
 
@@ -844,16 +871,17 @@ in {
 
                     ${markManaged n}
                   ''
-                )
-                symlinks
+                ) symlinks
               );
 
               mkFiles = concatStringsSep "\n" (
                 mapAttrsToList (
-                  n_: v_: let
+                  n_: v_:
+                  let
                     n = escapeShellArg n_;
                     v = escapeShellArg v_;
-                  in ''
+                  in
+                  ''
                     ${backup n}
                     mkdir -p "$(dirname ${n})"
 
@@ -871,155 +899,152 @@ in {
 
                     ${markManaged n}
                   ''
-                )
-                files
+                ) files
               );
             in
-              getExe (
-                pkgs.writeShellApplication {
-                  name = "minecraft-server-${name}-start-pre";
-
-                  excludeShellChecks = ["SC2016"];
-
-                  text = ''
-                    ${cleanAllManaged}
-                    ${mkSymlinks}
-                    ${mkFiles}
-                    ${conf.extraStartPre}
-                  '';
-                }
-              );
-
-            ExecStart = getExe (
+            getExe (
               pkgs.writeShellApplication {
-                name = "minecraft-server-${name}-start";
-                text = ''
-                  ${msConfig.hooks.start}
-                '';
-              }
-            );
+                name = "minecraft-server-${name}-start-pre";
 
-            ExecStartPost = getExe (
-              pkgs.writeShellApplication {
-                name = "minecraft-server-${name}-start-post";
-                text = ''
-                  ${msConfig.hooks.postStart}
-                  ${conf.extraStartPost}
-                '';
-              }
-            );
+                excludeShellChecks = [ "SC2016" ];
 
-            execStopScript = getExe (
-              pkgs.writeShellApplication {
-                name = "minecraft-server-${name}-stop";
-                text = ''
-                  # systemd has no ExecStopPre hook, so we just run it here.
-                  ${conf.extraStopPre}
-
-                  ${msConfig.hooks.stop}
-                '';
-              }
-            );
-
-            ExecStopPost = getExe (
-              pkgs.writeShellApplication {
-                name = "minecraft-server-${name}-stop-post";
                 text = ''
                   ${cleanAllManaged}
-                  ${conf.extraStopPost}
+                  ${mkSymlinks}
+                  ${mkFiles}
+                  ${conf.extraStartPre}
                 '';
               }
             );
 
-            ExecReload = getExe (
-              pkgs.writeShellApplication {
-                name = "minecraft-server-${name}-reload";
-                text = ''
-                  ${ExecStopPost}
-                  ${ExecStartPre}
-                  ${conf.extraReload}
-                '';
-              }
-            );
-          in {
-            name = "minecraft-server-${name}";
-            value = {
-              description = "Minecraft Server ${name}";
-              wantedBy = mkIf conf.autoStart ["multi-user.target"];
-              requires = optional conf.managementSystem.systemd-socket.enable "minecraft-server-${name}.socket";
-              partOf = optional conf.managementSystem.systemd-socket.enable "minecraft-server-${name}.socket";
-              after =
-                [
-                  "network.target"
-                ]
-                ++ optional conf.managementSystem.systemd-socket.enable "minecraft-server-${name}.socket";
+          ExecStart = getExe (
+            pkgs.writeShellApplication {
+              name = "minecraft-server-${name}-start";
+              text = ''
+                ${msConfig.hooks.start}
+              '';
+            }
+          );
 
-              enable = conf.enable;
+          ExecStartPost = getExe (
+            pkgs.writeShellApplication {
+              name = "minecraft-server-${name}-start-post";
+              text = ''
+                ${msConfig.hooks.postStart}
+                ${conf.extraStartPost}
+              '';
+            }
+          );
 
-              startLimitIntervalSec = 120;
-              startLimitBurst = 5;
+          execStopScript = getExe (
+            pkgs.writeShellApplication {
+              name = "minecraft-server-${name}-stop";
+              text = ''
+                # systemd has no ExecStopPre hook, so we just run it here.
+                ${conf.extraStopPre}
 
-              serviceConfig =
-                {
-                  inherit
-                    ExecStartPre
-                    ExecStart
-                    ExecStartPost
-                    ExecStopPost
-                    ExecReload
-                    ;
-                  ExecStop = "${execStopScript} $MAINPID";
+                ${msConfig.hooks.stop}
+              '';
+            }
+          );
 
-                  # the Minecraft server (as of 1.20.6) has a 60s timeout for saving each world.
-                  # let's let it handle potential lock-ups by itself before resorting to killing it.
-                  TimeoutStopSec = "1min 15s";
+          ExecStopPost = getExe (
+            pkgs.writeShellApplication {
+              name = "minecraft-server-${name}-stop-post";
+              text = ''
+                ${cleanAllManaged}
+                ${conf.extraStopPost}
+              '';
+            }
+          );
 
-                  Restart = conf.restart;
-                  WorkingDirectory = "${cfg.dataDir}/${name}";
-                  User = conf.user;
-                  Group = conf.group;
-                  EnvironmentFile = mkIf (cfg.environmentFile != null) (toString cfg.environmentFile);
+          ExecReload = getExe (
+            pkgs.writeShellApplication {
+              name = "minecraft-server-${name}-reload";
+              text = ''
+                ${ExecStopPost}
+                ${ExecStartPre}
+                ${conf.extraReload}
+              '';
+            }
+          );
+        in
+        {
+          name = "minecraft-server-${name}";
+          value = {
+            description = "Minecraft Server ${name}";
+            wantedBy = mkIf conf.autoStart [ "multi-user.target" ];
+            requires = optional conf.managementSystem.systemd-socket.enable "minecraft-server-${name}.socket";
+            partOf = optional conf.managementSystem.systemd-socket.enable "minecraft-server-${name}.socket";
+            after = [
+              "network.target"
+            ]
+            ++ optional conf.managementSystem.systemd-socket.enable "minecraft-server-${name}.socket";
 
-                  # Default directory for management sockets
-                  RuntimeDirectory = "minecraft";
-                  RuntimeDirectoryPreserve = "yes";
+            enable = conf.enable;
 
-                  # Hardening
-                  CapabilityBoundingSet = [""];
-                  DeviceAllow = [""];
-                  LockPersonality = true;
-                  PrivateDevices = true;
-                  PrivateTmp = true;
-                  PrivateUsers = true;
-                  ProtectClock = true;
-                  ProtectControlGroups = true;
-                  ProtectHome = true;
-                  ProtectHostname = true;
-                  ProtectKernelLogs = true;
-                  ProtectKernelModules = true;
-                  ProtectKernelTunables = true;
-                  ProtectProc = "invisible";
-                  RestrictAddressFamilies = [
-                    "AF_UNIX"
-                    "AF_INET"
-                    "AF_INET6"
-                  ];
-                  RestrictNamespaces = true;
-                  RestrictRealtime = true;
-                  RestrictSUIDSGID = true;
-                  SystemCallArchitectures = "native";
-                  UMask = "0007";
-                }
-                // msConfig.serviceConfig;
+            startLimitIntervalSec = 120;
+            startLimitBurst = 5;
 
-              restartIfChanged = !conf.enableReload;
-              reloadIfChanged = conf.enableReload;
+            serviceConfig = {
+              inherit
+                ExecStartPre
+                ExecStart
+                ExecStartPost
+                ExecStopPost
+                ExecReload
+                ;
+              ExecStop = "${execStopScript} $MAINPID";
 
-              inherit (conf) path environment;
-            };
-          }
-        )
-        servers;
+              # the Minecraft server (as of 1.20.6) has a 60s timeout for saving each world.
+              # let's let it handle potential lock-ups by itself before resorting to killing it.
+              TimeoutStopSec = "1min 15s";
+
+              Restart = conf.restart;
+              WorkingDirectory = "${cfg.dataDir}/${name}";
+              User = conf.user;
+              Group = conf.group;
+              EnvironmentFile = mkIf (cfg.environmentFile != null) (toString cfg.environmentFile);
+
+              # Default directory for management sockets
+              RuntimeDirectory = "minecraft";
+              RuntimeDirectoryPreserve = "yes";
+
+              # Hardening
+              CapabilityBoundingSet = [ "" ];
+              DeviceAllow = [ "" ];
+              LockPersonality = true;
+              PrivateDevices = true;
+              PrivateTmp = true;
+              PrivateUsers = true;
+              ProtectClock = true;
+              ProtectControlGroups = true;
+              ProtectHome = true;
+              ProtectHostname = true;
+              ProtectKernelLogs = true;
+              ProtectKernelModules = true;
+              ProtectKernelTunables = true;
+              ProtectProc = "invisible";
+              RestrictAddressFamilies = [
+                "AF_UNIX"
+                "AF_INET"
+                "AF_INET6"
+              ];
+              RestrictNamespaces = true;
+              RestrictRealtime = true;
+              RestrictSUIDSGID = true;
+              SystemCallArchitectures = "native";
+              UMask = "0007";
+            }
+            // msConfig.serviceConfig;
+
+            restartIfChanged = !conf.enableReload;
+            reloadIfChanged = conf.enableReload;
+
+            inherit (conf) path environment;
+          };
+        }
+      ) servers;
     }
   );
 }
