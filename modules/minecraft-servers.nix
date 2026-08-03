@@ -275,16 +275,16 @@ in
     #   '';
     # };
 
-    environmentFile = mkOpt' (types.nullOr types.path) null ''
-      File consisting of lines in the form varname=value to define environment
-      variables for the minecraft servers.
-
-      Secrets (database passwords, secret keys, etc.) can be provided to server
-      files without adding them to the Nix store by defining them in the
-      environment file and referring to them in option
-      <option>services.minecraft-servers.servers.<name>.files</option> with the
-      syntax @varname@.
-    '';
+    # environmentFile = mkOpt' (types.nullOr types.path) null ''
+    #   File consisting of lines in the form varname=value to define environment
+    #   variables for the minecraft servers.
+    #
+    #   Secrets (database passwords, secret keys, etc.) can be provided to server
+    #   files without adding them to the Nix store by defining them in the
+    #   environment file and referring to them in option
+    #   <option>services.minecraft-servers.servers.<name>.files</option> with the
+    #   syntax @varname@.
+    # '';
 
     managementSystem = mkOption {
       type = managementSystem;
@@ -349,6 +349,17 @@ in
                 If set to <literal>false</literal>, can still be started with
                 <literal>systemctl start minecraft-server-servername</literal>.
                 Requires the server to be enabled.
+              '';
+
+              environmentFile = mkOpt' (types.nullOr types.path) null ''
+                File consisting of lines in the form varname=value to define environment
+                variables for the minecraft servers.
+
+                Secrets (database passwords, secret keys, etc.) can be provided to server
+                files without adding them to the Nix store by defining them in the
+                environment file and referring to them in option
+                <option>services.minecraft-servers.servers.<name>.files</option> with the
+                syntax @varname@.
               '';
 
               openFirewall = mkOption {
@@ -1004,7 +1015,7 @@ in
               WorkingDirectory = "${cfg.dataDir}/${name}";
               User = conf.user;
               Group = conf.group;
-              EnvironmentFile = mkIf (cfg.environmentFile != null) (toString cfg.environmentFile);
+              EnvironmentFile = mkIf (conf.environmentFile != null) (toString conf.environmentFile);
 
               # Default directory for management sockets
               RuntimeDirectory = "minecraft";
