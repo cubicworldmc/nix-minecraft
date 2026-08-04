@@ -693,11 +693,11 @@ in
       # };
 
       users.users = mapAttrs' (
-        _: conf:
+        server: conf:
         nameValuePair conf.user (
           lib.mkDefault {
             description = "Minecraft server service user";
-            home = cfg.dataDir;
+            home = "${cfg.dataDir}/${server}";
             createHome = true;
             homeMode = "770";
             isSystemUser = true;
