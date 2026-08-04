@@ -816,6 +816,7 @@ in
               4-5. set permissions
             */
             value = ''
+              echo "Creating tmux socket for minecraft-server-${name}"
               ${pkgs.coreutils}/bin/mkdir -p ${path}
               ${pkgs.coreutils}/bin/rm -rf ${path}
               ${pkgs.coreutils}/bin/touch ${path}
