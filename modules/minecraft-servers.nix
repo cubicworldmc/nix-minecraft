@@ -251,29 +251,29 @@ in
       Plase use <option>services.minecraft-servers.managementSystem.tmux.socketPath</option>` instead.
     '';
 
-    # user = mkOption {
-    #   type = types.str;
-    #   default = "minecraft";
-    #   description = ''
-    #     Name of the user to create and run servers under.
-    #     It is recommended to leave this as the default, as it is
-    #     the same user as <option>services.minecraft-server</option>.
-    #   '';
-    #   internal = true;
-    #   visible = false;
-    # };
-    #
-    # group = mkOption {
-    #   type = types.str;
-    #   default = "minecraft";
-    #   description = ''
-    #     Name of the group to create and run servers under.
-    #     In order to modify the server files your user must be a part of this
-    #     group. If you are using the tmux management system (the default), you also need to be a part of this group to attach to the tmux socket.
-    #     It is recommended to leave this as the default, as it is
-    #     the same group as <option>services.minecraft-server</option>.
-    #   '';
-    # };
+    user = mkOption {
+      type = types.str;
+      default = "minecraft";
+      description = ''
+        Name of the user to create and run servers under.
+        It is recommended to leave this as the default, as it is
+        the same user as <option>services.minecraft-server</option>.
+      '';
+      internal = true;
+      visible = false;
+    };
+
+    group = mkOption {
+      type = types.str;
+      default = "minecraft";
+      description = ''
+        Name of the group to create and run servers under.
+        In order to modify the server files your user must be a part of this
+        group. If you are using the tmux management system (the default), you also need to be a part of this group to attach to the tmux socket.
+        It is recommended to leave this as the default, as it is
+        the same group as <option>services.minecraft-server</option>.
+      '';
+    };
 
     # environmentFile = mkOpt' (types.nullOr types.path) null ''
     #   File consisting of lines in the form varname=value to define environment
@@ -322,27 +322,27 @@ in
                 just does not generate the service file.
               '';
 
-              user = mkOption {
-                type = types.str;
-                default = "minecraft";
-                description = ''
-                  Name of the user to create and run servers under.
-                  It is recommended to leave this as the default, as it is
-                  the same user as <option>services.minecraft-server</option>.
-                '';
-              };
-
-              group = mkOption {
-                type = types.str;
-                default = "minecraft";
-                description = ''
-                  Name of the group to create and run servers under.
-                  In order to modify the server files your user must be a part of this
-                  group. If you are using the tmux management system (the default), you also need to be a part of this group to attach to the tmux socket.
-                  It is recommended to leave this as the default, as it is
-                  the same group as <option>services.minecraft-server</option>.
-                '';
-              };
+              # user = mkOption {
+              #   type = types.str;
+              #   default = "minecraft";
+              #   description = ''
+              #     Name of the user to create and run servers under.
+              #     It is recommended to leave this as the default, as it is
+              #     the same user as <option>services.minecraft-server</option>.
+              #   '';
+              # };
+              #
+              # group = mkOption {
+              #   type = types.str;
+              #   default = "minecraft";
+              #   description = ''
+              #     Name of the group to create and run servers under.
+              #     In order to modify the server files your user must be a part of this
+              #     group. If you are using the tmux management system (the default), you also need to be a part of this group to attach to the tmux socket.
+              #     It is recommended to leave this as the default, as it is
+              #     the same group as <option>services.minecraft-server</option>.
+              #   '';
+              # };
 
               autoStart = mkBoolOpt' true ''
                 Whether to start this server on boot.
@@ -680,39 +680,39 @@ in
       servers = filterAttrs (_: cfg: cfg.enable) cfg.servers;
     in
     {
-      # users = {
-      #   users.minecraft = mkIf (cfg.user == "minecraft") {
-      #     description = "Minecraft server service user";
-      #     home = cfg.dataDir;
-      #     createHome = true;
-      #     homeMode = "770";
-      #     isSystemUser = true;
-      #     group = "minecraft";
-      #   };
-      #   groups.minecraft = mkIf (cfg.group == "minecraft") {};
-      # };
+      users = {
+        users.minecraft = mkIf (cfg.user == "minecraft") {
+          description = "Minecraft server service user";
+          home = cfg.dataDir;
+          createHome = true;
+          homeMode = "770";
+          isSystemUser = true;
+          group = "minecraft";
+        };
+        groups.minecraft = mkIf (cfg.group == "minecraft") { };
+      };
 
-      users.users = mapAttrs' (
-        server: conf:
-        nameValuePair conf.user (
-          lib.mkDefault {
-            description = "Minecraft server service user";
-            home = "${cfg.dataDir}/${server}";
-            createHome = true;
-            homeMode = "770";
-            isSystemUser = true;
-            group = conf.group;
-          }
-        )
-      ) servers;
-
-      users.groups = mapAttrs' (
-        _: conf:
-        nameValuePair (conf.group) (
-          lib.mkDefault {
-          }
-        )
-      ) servers;
+      # users.users = mapAttrs' (
+      #   server: conf:
+      #   nameValuePair conf.user (
+      #     lib.mkDefault {
+      #       description = "Minecraft server service user";
+      #       home = "${cfg.dataDir}/${server}";
+      #       createHome = true;
+      #       homeMode = "770";
+      #       isSystemUser = true;
+      #       group = conf.group;
+      #     }
+      #   )
+      # ) servers;
+      #
+      # users.groups = mapAttrs' (
+      #   _: conf:
+      #   nameValuePair (conf.group) (
+      #     lib.mkDefault {
+      #     }
+      #   )
+      # ) servers;
 
       assertions = [
         {
@@ -771,7 +771,7 @@ in
         };
 
       systemd.tmpfiles.rules = mapAttrsToList (
-        name: conf: "d '${cfg.dataDir}/${name}' 0770 ${conf.user} ${conf.group} - -"
+        name: conf: "d '${cfg.dataDir}/${name}' 0770 ${cfg.user} ${cfg.group} - -"
       ) servers;
 
       systemd.sockets = pipe servers [
@@ -789,8 +789,8 @@ in
                 {
                   ListenFIFO = socketConf.path name;
                   SocketMode = socketConf.mode;
-                  SocketUser = server.user;
-                  SocketGroup = server.group;
+                  SocketUser = cfg.user;
+                  SocketGroup = cfg.group;
                   RemoveOnStop = true;
                   FlushPending = true;
                 };
@@ -1013,8 +1013,8 @@ in
 
               Restart = conf.restart;
               WorkingDirectory = "${cfg.dataDir}/${name}";
-              User = conf.user;
-              Group = conf.group;
+              User = cfg.user;
+              Group = cfg.group;
               EnvironmentFile = mkIf (conf.environmentFile != null) (toString conf.environmentFile);
 
               # Default directory for management sockets
