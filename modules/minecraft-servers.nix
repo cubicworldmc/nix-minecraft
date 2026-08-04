@@ -799,6 +799,33 @@ in
         ))
       ];
 
+      system.activationScripts = pipe servers [
+        (filterAttrs (_: server: server.managementSystem.tmux.enable))
+        (mapAttrs' (
+          name: server:
+          let
+            path = server.managementSystem.tmux.socketPath name;
+          in
+          {
+            name = "minecraft-server-${name}-tmux-socket-creation";
+            /*
+              path should be a file, so:
+              1. create path as if it was a directory
+              2. remove the directory, which would only remove the last directory
+              3. instead of the last directory, create the file.
+              4-5. set permissions
+            */
+            value = ''
+              ${pkgs.coreutils}/bin/mkdir -p ${path}
+              ${pkgs.coreutils}/bin/rm -rf ${path}
+              ${pkgs.coreutils}/bin/touch ${path}
+              ${pkgs.coreutils}/bin/chown ${server.user}:${server.group} ${path}
+              ${pkgs.coreutils}/bin/chmod 644 ${path}
+            '';
+          }
+        ))
+      ];
+
       systemd.services = mapAttrs' (
         name: conf:
         let
