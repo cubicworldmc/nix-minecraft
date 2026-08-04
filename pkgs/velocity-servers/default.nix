@@ -1,5 +1,6 @@
 {
   callPackage,
+  java_versions,
   lib,
 }:
 let
@@ -30,6 +31,7 @@ let
         callPackage ./derivation.nix {
           inherit (value) url sha256 channel;
           version = "${version}-build.${buildNumber}";
+          jre = java_versions.latest;
         }
       ) builds
     )
